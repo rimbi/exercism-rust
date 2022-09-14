@@ -1,12 +1,15 @@
 pub fn reply(message: &str) -> &str {
-    let is_question = |m: &str| m.ends_with("?");
-    let is_yelling = |m: &str| m.to_uppercase() == m;
-    let is_alpha = |m: &str| m.chars().any(|c| c.is_alphabetic());
-    match message.trim() {
-        "" => "Fine. Be that way!",
-        m if is_alpha(m) && is_question(m) && is_yelling(m) => "Calm down, I know what I'm doing!",
-        m if is_alpha(m) && is_yelling(m) => "Whoa, chill out!",
-        m if is_question(m) => "Sure.",
+    let message = message.trim();
+    if message.is_empty() {
+        return "Fine. Be that way!";
+    }
+    let contains_letters = message.chars().any(|c| c.is_alphabetic());
+    let is_question = message.ends_with("?");
+    let is_yelling = message == message.to_uppercase();
+    match (is_question, is_yelling, contains_letters) {
+        (true, true, true) => "Calm down, I know what I'm doing!",
+        (true, _, _) => "Sure.",
+        (_, true, true) => "Whoa, chill out!",
         _ => "Whatever.",
     }
 }

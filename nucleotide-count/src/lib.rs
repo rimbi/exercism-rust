@@ -1,33 +1,30 @@
 use std::collections::HashMap;
 
-static VALID: [char; 4] = ['A', 'C', 'G', 'T'];
-
-fn validate(c: char) -> Result<char, char> {
-    if VALID.iter().any(|x| *x == c) {
-        Ok(c)
-    } else {
-        Err(c)
+fn is_valid_nucleotide(nucleotide: char) -> Result<(), char> {
+    match nucleotide {
+        'A' | 'C' | 'G' | 'T' => Ok(()),
+        _ => Err(nucleotide),
     }
 }
 
-pub fn count(c: char, s: &str) -> Result<usize, char> {
-    validate(c).and_then(|c| {
-        s.chars()
-            .map(validate)
-            .collect::<Result<Vec<_>, _>>()
-            .map(|v| v.into_iter().filter(|x| *x == c).count())
+pub fn count(nucleotide: char, dna: &str) -> Result<usize, char> {
+    is_valid_nucleotide(nucleotide)?;
+    dna.chars().try_fold(0, |mut count, c| {
+        is_valid_nucleotide(c)?;
+        if c == nucleotide {
+            count += 1
+        }
+        Ok(count)
     })
 }
 
-pub fn nucleotide_counts(s: &str) -> Result<HashMap<char, usize>, char> {
-    let x = [Ok(('a', 1)), Ok(('b', 1)), Err('X')]
-        .iter()
-        .cloned()
-        .collect();
-
-    // let x = VALID
-    //     .iter()
-    //     .map(|c| count(*c, s).map(|size| (*c, size)))
-    //     .collect();
-    x
+pub fn nucleotide_counts(dna: &str) -> Result<HashMap<char, usize>, char> {
+    println!("{}", dna);
+    let mut res = HashMap::new();
+    res.insert('A', count('A', dna)?);
+    res.insert('C', count('C', dna)?);
+    res.insert('G', count('G', dna)?);
+    res.insert('T', count('T', dna)?);
+    println!("{:?}", res);
+    Ok(res)
 }

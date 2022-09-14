@@ -1,23 +1,24 @@
-use std::collections::HashMap;
+fn get_complementary(ch: char) -> Option<char> {
+    match ch {
+        ')' => Some('('),
+        ']' => Some('['),
+        '}' => Some('{'),
+        _ => None
+    }
+}
 
 pub fn brackets_are_balanced(string: &str) -> bool {
-    let mut v = vec![];
-    let brackets: HashMap<char, char> = [('{', '}'), ('[', ']'), ('(', ')')]
-        .iter()
-        .cloned()
-        .collect();
-    for c in string.chars() {
-        match c {
-            '{' | '[' | '(' => {
-                v.push(c);
-            }
-            '}' | ']' | ')' => {
-                if Some(x) != v.pop() {
+    let mut stack = vec![];
+    for ch in string.chars() {
+        match ch {
+            '(' | '[' | '{' => stack.push(ch),
+            ')' | ']' | '}' => {
+                if stack.pop() != get_complementary(ch) {
                     return false;
                 }
             }
             _ => (),
         }
     }
-    v.is_empty()
+    stack.is_empty()
 }

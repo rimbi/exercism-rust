@@ -1,13 +1,16 @@
+use std::vec;
+
 pub fn factors(n: u64) -> Vec<u64> {
-    let mut x = n;
+    let mut remaining = n;
+    let mut primes = vec![];
     let mut i = 2;
-    let mut v = vec![];
-    while x >= i {
-        while x % i == 0 {
-            x /= i;
-            v.push(i);
+    while remaining > 1 {
+        if remaining % i == 0 {
+            primes.push(i);
+            remaining /= i;
+        } else {
+            i += 1;
         }
-        i += 1;
     }
-    v
+    primes
 }

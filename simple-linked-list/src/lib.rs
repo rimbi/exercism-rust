@@ -1,18 +1,25 @@
 use std::iter::FromIterator;
 
-#[derive(PartialEq, Clone)]
-pub struct Node<T> {
+type NextNode<T> = Box<Node<T>>;
+
+struct Node<T> {
+    next: Option<NextNode<T>>,
     data: T,
-    next: Option<Box<Node<T>>>,
 }
 
 pub struct SimpleLinkedList<T> {
-    head: Option<Box<Node<T>>>,
+    head: Option<NextNode<T>>,
 }
 
-impl<T: Clone> SimpleLinkedList<T> {
-    pub fn new() -> Self {
+impl<T> Default for SimpleLinkedList<T> {
+    fn default() -> Self {
         Self { head: None }
+    }
+}
+
+impl<T> SimpleLinkedList<T> {
+    pub fn new() -> Self {
+        Self::default()
     }
 
     // You may be wondering why it's necessary to have is_empty()
@@ -25,52 +32,45 @@ impl<T: Clone> SimpleLinkedList<T> {
     }
 
     pub fn len(&self) -> usize {
-        let mut node = &self.head;
-        let mut i = 0;
-        while node.is_some() {
-            i += 1;
-            node = &node.as_ref().unwrap().next;
-        }
-        i
+        std::iter::successors(self.head.as_ref(), |cur| cur.next.as_ref()).count()
     }
 
     pub fn push(&mut self, element: T) {
-        self.head = Some(Box::new(Node {
-            data: element,
+        let node = Node {
             next: self.head.take(),
-        }));
+            data: element,
+        };
+        self.head = Some(Box::new(node));
     }
 
     pub fn pop(&mut self) -> Option<T> {
-        if self.head.is_none() {
-            return None;
-        }
-        let head = self.head.take();
-        let mut head = head.unwrap();
-        self.head = head.next.take();
-        Some(head.data)
+        self.head.as_ref()?;
+        let res = self.head.take().unwrap();
+        self.head = res.next;
+        Some(res.data)
     }
 
     pub fn peek(&self) -> Option<&T> {
-        if let Some(node) = &self.head {
-            return Some(&node.data);
-        }
-        None
+        self.head.as_ref().map(|val| &val.data)
     }
 
-    pub fn rev(mut self) -> SimpleLinkedList<T> {
-        let mut list = Self::new();
-        while let Some(data) = self.pop() {
+    #[must_use]
+    pub fn rev(self) -> SimpleLinkedList<T> {
+        let mut list = Self { head: None };
+        let mut s = self;
+        while let Some(data) = s.pop() {
             list.push(data);
         }
         list
     }
 }
 
-impl<T: Clone> FromIterator<T> for SimpleLinkedList<T> {
+impl<T> FromIterator<T> for SimpleLinkedList<T> {
     fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
-        let mut list = Self::new();
-        iter.into_iter().for_each(|data| list.push(data.clone()));
+        let mut list = Self { head: None };
+        for el in iter {
+            list.push(el);
+        }
         list
     }
 }
@@ -86,12 +86,13 @@ impl<T: Clone> FromIterator<T> for SimpleLinkedList<T> {
 // of IntoIterator is that implementing that interface is fairly complicated, and
 // demands more of the student than we expect at this point in the track.
 
-impl<T: Clone> Into<Vec<T>> for SimpleLinkedList<T> {
-    fn into(mut self) -> Vec<T> {
-        let mut v = vec![];
-        while let Some(data) = self.pop() {
-            v.push(data);
+impl<T> From<SimpleLinkedList<T>> for Vec<T> {
+    fn from(mut _linked_list: SimpleLinkedList<T>) -> Vec<T> {
+        let mut res = vec![];
+        while let Some(data) = _linked_list.pop() {
+            res.push(data);
         }
-        v.into_iter().rev().collect()
+        res.reverse();
+        res
     }
 }

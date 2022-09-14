@@ -1,32 +1,26 @@
 #[derive(Debug)]
-pub struct ChessPosition {
-    rank: i32,
-    file: i32,
-}
+pub struct ChessPosition(i32, i32);
 
 #[derive(Debug)]
-pub struct Queen {
-    position: ChessPosition,
-}
+pub struct Queen(ChessPosition);
 
 impl ChessPosition {
     pub fn new(rank: i32, file: i32) -> Option<Self> {
-        match (rank, file) {
-            (0..=7, 0..=7) => Some(Self { rank, file }),
-            _ => None,
+        if rank < 0 || rank > 7 || file < 0 || file > 7 {
+            return None;
         }
+        Some(Self(rank, file))
     }
 }
 
 impl Queen {
     pub fn new(position: ChessPosition) -> Self {
-        Self { position }
+        Self(position)
     }
 
     pub fn can_attack(&self, other: &Queen) -> bool {
-        self.position.rank == other.position.rank
-            || self.position.file == other.position.file
-            || (self.position.rank - other.position.rank).abs()
-                == (self.position.file - other.position.file).abs()
+        let Queen(ChessPosition(rank1, file1)) = self;
+        let Queen(ChessPosition(rank2, file2)) = other;
+        rank1 == rank2 || file1 == file2 || (rank1 - rank2).abs() == (file1 - file2).abs()
     }
 }

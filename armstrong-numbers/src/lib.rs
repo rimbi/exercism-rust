@@ -1,7 +1,10 @@
 pub fn is_armstrong_number(num: u32) -> bool {
-    let x = num.to_string();
-    x.chars()
-        .map(|c| c.to_digit(10).unwrap().pow(x.len() as u32))
-        .sum::<u32>()
-        == num
+    let num_digits = num.to_string().len();
+    let mut remaining = num;
+    let mut total = 0;
+    while remaining > 0 {
+        total += (remaining % 10).pow(num_digits as u32);
+        remaining /= 10;
+    }
+    total == num
 }

@@ -9,7 +9,7 @@ impl<'a> HighScores<'a> {
     }
 
     pub fn scores(&self) -> &[u32] {
-        self.scores
+        &self.scores
     }
 
     pub fn latest(&self) -> Option<u32> {
@@ -21,8 +21,8 @@ impl<'a> HighScores<'a> {
     }
 
     pub fn personal_top_three(&self) -> Vec<u32> {
-        let mut y = self.scores.to_vec();
-        y.sort();
-        y.into_iter().rev().take(3).collect()
+        let mut scores = self.scores.to_vec().clone();
+        scores.sort();
+        scores.iter().cloned().rev().take(3).collect()
     }
 }

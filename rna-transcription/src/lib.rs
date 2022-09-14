@@ -1,58 +1,39 @@
-#[derive(Debug, PartialEq)]
-pub struct Dna {
-    dna: String,
-}
+use std::collections::HashMap;
 
-#[derive(Debug, PartialEq)]
-pub struct Rna {
-    rna: String,
-}
+static DNA_NUCLEOTIDES: &[char] = &['A', 'C', 'G', 'T'];
+static RNA_NUCLEOTIDES: &[char] = &['U', 'G', 'C', 'A'];
 
-impl From<Dna> for Rna {
-    fn from(dna: Dna) -> Self {
-        let rna = dna
-            .dna
-            .chars()
-            .map(|c| match c {
-                'G' => 'C',
-                'C' => 'G',
-                'T' => 'A',
-                'A' => 'U',
-                _ => ' ',
-            })
-            .collect();
-        Self { rna }
-    }
-}
+#[derive(Debug, PartialEq, Eq)]
+pub struct Dna(String);
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct Rna(String);
 
 impl Dna {
     pub fn new(dna: &str) -> Result<Dna, usize> {
-        for (i, c) in dna.to_ascii_uppercase().chars().enumerate() {
-            match c {
-                'G' | 'C' | 'T' | 'A' => (),
-                _ => return Err(i),
+        for (i, c) in dna.chars().enumerate() {
+            if !DNA_NUCLEOTIDES.contains(&c) {
+                return Err(i);
             }
         }
-        Ok(Self {
-            dna: dna.to_ascii_uppercase().into(),
-        })
+        Ok(Self(dna.to_string()))
     }
 
     pub fn into_rna(self) -> Rna {
-        self.into()
+        let Dna(dna) = self;
+        let mapping: HashMap<_, _> = DNA_NUCLEOTIDES.iter().zip(RNA_NUCLEOTIDES).collect();
+        let rna: String = dna.chars().map(|c| *mapping.get(&c).unwrap()).collect();
+        Rna::new(&rna).unwrap()
     }
 }
 
 impl Rna {
     pub fn new(rna: &str) -> Result<Rna, usize> {
-        for (i, c) in rna.to_ascii_uppercase().chars().enumerate() {
-            match c {
-                'G' | 'C' | 'U' | 'A' => (),
-                _ => return Err(i),
+        for (i, c) in rna.chars().enumerate() {
+            if !RNA_NUCLEOTIDES.contains(&c) {
+                return Err(i);
             }
         }
-        Ok(Self {
-            rna: rna.to_ascii_uppercase().into(),
-        })
+        Ok(Self(rna.to_string()))
     }
 }

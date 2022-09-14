@@ -1,116 +1,106 @@
-use std::cmp::min;
-
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Error {
     NotEnoughPinsLeft,
     GameComplete,
 }
 
-#[derive(Debug, Default)]
-pub struct Frame {
-    first: u16,
-    second: u16,
-    complete: bool,
-}
-
-impl Frame {
-    pub fn new(pins: u16) -> Result<Self, Error> {
-        if pins > 10 {
-            return Err(Error::NotEnoughPinsLeft);
-        }
-        let mut f = Self::default();
-        f.first = pins;
-        f.complete = pins == 10;
-        Ok(f)
-    }
-
-    pub fn roll(&mut self, pins: u16) -> Result<(), Error> {
-        if self.complete || pins + self.first > 10 {
-            return Err(Error::NotEnoughPinsLeft);
-        }
-        self.second = pins;
-        self.complete = true;
-        Ok(())
-    }
-
-    pub fn pins(&self) -> u16 {
-        self.first + self.second
-    }
-
-    pub fn is_spare(&self) -> bool {
-        !self.is_strike() && self.pins() == 10
-    }
-
-    pub fn is_strike(&self) -> bool {
-        self.first == 10
-    }
-
-    pub fn is_complete(&self) -> bool {
-        self.complete
-    }
-}
-
 pub struct BowlingGame {
     frames: Vec<Frame>,
+    first_roll: Option<u16>,
 }
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Frame {
+    Open(u16, u16),
+    Spare(u16),
+    Strike,
+}
+
+use Frame::*;
 
 impl BowlingGame {
     pub fn new() -> Self {
-        Self { frames: vec![] }
+        Self {
+            frames: vec![],
+            first_roll: None,
+        }
     }
 
     pub fn roll(&mut self, pins: u16) -> Result<(), Error> {
+        if pins > 10 {
+            return Err(Error::NotEnoughPinsLeft);
+        }
         if self.is_game_complete() {
             return Err(Error::GameComplete);
         }
-        let last = self.frames.last_mut();
-        if last.as_ref().map(|f| f.is_complete()).unwrap_or(true) {
-            self.frames.push(Frame::new(pins)?);
-        } else {
-            last.unwrap().roll(pins)?;
+        match (self.first_roll, pins) {
+            (None, 10) => self.add_frame(Frame::Strike),
+            (None, n) => {
+                self.first_roll = Some(n);
+                if self.frames.len() == 10 {
+                    if let Some(Spare(_)) = self.frames.last() {
+                        self.add_frame(Frame::Open(n, 0))
+                    }
+                }
+            }
+            (Some(n), x) if n + x == 10 => self.add_frame(Frame::Spare(n)),
+            (Some(n), x) if n + x < 10 => self.add_frame(Frame::Open(n, x)),
+            (_, _) => return Err(Error::NotEnoughPinsLeft),
         }
-
+        if self.is_game_complete() {
+            while self.frames.len() < 12 {
+                self.add_frame(Open(0, 0));
+            }
+        }
         Ok(())
     }
 
-    pub fn is_game_complete(&self) -> bool {
-        if self.frames.len() < 10 {
-            return false;
+    fn is_game_complete(&self) -> bool {
+        let len = self.frames.len();
+        match self.frames.get(9) {
+            Some(Open(_, _)) => true,
+            Some(Spare(_)) if len >= 11 => true,
+            Some(Strike) => match len {
+                10 => false,
+                11 => match self.frames.get(len - 1) {
+                    Some(Strike) => false,
+                    _ => true,
+                },
+                12 => true,
+                _ => panic!("Inconsistent state!"),
+            },
+            _ => false,
         }
-        let last = self.frames.last().unwrap();
-        if self.frames.len() == 10 {
-            return last.is_complete() && !(last.is_spare() || last.is_strike());
-        }
+    }
 
-        if self.frames.len() == 11 {
-            return self.frames[9].is_spare()
-                || (self.frames[9].is_strike() && last.is_complete() && !last.is_strike());
-        }
-        true
+    fn add_frame(&mut self, frame: Frame) {
+        self.frames.push(frame);
+        self.first_roll = None;
     }
 
     pub fn score(&self) -> Option<u16> {
         if !self.is_game_complete() {
             return None;
         }
-        let mut result = 0;
-        for i in 0..min(self.frames.len(), 10) {
-            let f = &self.frames[i];
-            result += f.pins();
-            if f.is_spare() {
-                let next = self.frames.get(i + 1).map(|f| f.first).unwrap_or(0);
-                result += next;
-            } else if f.is_strike() {
-                let mut next = self.frames.get(i + 1).map(|f| f.first).unwrap_or(0);
-                result += next;
-                if next != 10 {
-                    next = self.frames.get(i + 1).map(|f| f.second).unwrap_or(0);
-                } else {
-                    next = self.frames.get(i + 2).map(|f| f.first).unwrap_or(0);
-                }
-                result += next;
-            }
+        let points = self
+            .frames
+            .windows(3)
+            .map(|frames| self.calculate_frame_point(frames))
+            .sum();
+        Some(points)
+    }
+
+    fn calculate_frame_point(&self, frames: &[Frame]) -> u16 {
+        match (frames[0], frames[1], frames[2]) {
+            (Open(p1, p2), _, _) => p1 + p2,
+            (Spare(_), Open(p1, _), _) => 10 + p1,
+            (Spare(_), Spare(p1), _) => 10 + p1,
+            (Spare(_), Strike, _) => 10 + 10,
+            (Strike, Open(p1, p2), _) => 10 + p1 + p2,
+            (Strike, Spare(_), _) => 10 + 10,
+            (Strike, Strike, Open(p1, _)) => 10 + 10 + p1,
+            (Strike, Strike, Spare(p1)) => 10 + 10 + p1,
+            (Strike, Strike, Strike) => 10 + 10 + 10,
         }
-        Some(result)
     }
 }

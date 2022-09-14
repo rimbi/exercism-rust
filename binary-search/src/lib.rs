@@ -1,15 +1,18 @@
-pub fn find(array: &[i32], key: i32) -> Option<usize> {
-    let mut left = 0;
-    let mut right = array.len();
-    while left != right {
-        let i = (left + right) / 2;
-        if array[i] == key {
+use std::array;
+
+pub fn find<T: AsRef<[U]>, U: Ord>(array: T, key: U) -> Option<usize> {
+    let array = array.as_ref();
+    let mut begin = 0;
+    let mut end = array.len();
+    while begin != end {
+        let i = (end + begin) / 2;
+        if key == array[i] {
             return Some(i);
         }
-        if array[i] > key {
-            right = i;
+        if key < array[i] {
+            end = i;
         } else {
-            left = i;
+            begin = i + 1;
         }
     }
     None

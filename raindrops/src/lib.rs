@@ -1,14 +1,17 @@
 pub fn raindrops(n: u32) -> String {
-    let mut result = "".into();
-    let v = vec![(3, "Pling"), (5, "Plang"), (7, "Plong")];
-    for (k, v) in v {
-        if n % k == 0 {
-            result += v;
-        }
+    let mut res = String::new();
+    if n % 3 == 0 {
+        res.push_str("Pling");
     }
-    if result != "" {
-        result
-    } else {
+    if n % 5 == 0 {
+        res.push_str("Plang");
+    }
+    if n % 7 == 0 {
+        res.push_str("Plong");
+    }
+    if res.is_empty() {
         n.to_string()
+    } else {
+        res
     }
 }
