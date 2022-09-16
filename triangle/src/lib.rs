@@ -1,39 +1,34 @@
-use std::collections::HashSet;
-use std::hash::Hash;
-use std::iter::Sum;
 use std::ops::Add;
+
 pub struct Triangle<T> {
     sides: [T; 3],
 }
 
-impl<T> Triangle<T>
-where
-    T: 'static + Copy + Default + Hash + Eq + PartialOrd + Sum<T> + Add<Output = T>,
-{
+impl<T: Add<Output = T> + PartialOrd + Copy + Default> Triangle<T> {
     pub fn build(sides: [T; 3]) -> Option<Triangle<T>> {
-        if sides.iter().filter(|&s| *s > T::default()).count() != 3 {
-            return None;
-        }
-        let sum: T = sides.iter().cloned().sum();
-        if sides.iter().any(|&side| sum < side + side) {
+        if sides[0] > sides[1] + sides[2]
+            || sides[1] > sides[0] + sides[2]
+            || sides[2] > sides[0] + sides[1]
+            || sides.iter().any(|s| *s == T::default())
+        {
             return None;
         }
         Some(Triangle { sides })
     }
 
-    fn get_number_of_uniqu_sides(&self) -> usize {
-        self.sides.iter().cloned().collect::<HashSet<T>>().len()
-    }
-
     pub fn is_equilateral(&self) -> bool {
-        self.get_number_of_uniqu_sides() == 1
+        self.sides[0] == self.sides[1] && self.sides[0] == self.sides[2]
     }
 
     pub fn is_scalene(&self) -> bool {
-        self.get_number_of_uniqu_sides() == 3
+        self.sides[0] != self.sides[1]
+            && self.sides[1] != self.sides[2]
+            && self.sides[0] != self.sides[2]
     }
 
     pub fn is_isosceles(&self) -> bool {
-        self.get_number_of_uniqu_sides() == 2
+        self.sides[0] == self.sides[1]
+            || self.sides[0] == self.sides[2]
+            || self.sides[1] == self.sides[2]
     }
 }

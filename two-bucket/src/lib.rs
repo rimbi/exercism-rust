@@ -1,13 +1,17 @@
-use std::cmp::{max, min};
+use std::{
+    cmp::min,
+    collections::{HashSet, VecDeque},
+};
 
-#[derive(PartialEq, Eq, Debug, Clone)]
+#[derive(PartialEq, Eq, Debug, Default)]
 pub enum Bucket {
+    #[default]
     One,
     Two,
 }
 
 /// A struct to hold your results in.
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, Eq, Debug, Default)]
 pub struct BucketStats {
     /// The total number of "moves" it should take to reach the desired number of liters, including
     /// the first fill.
@@ -18,16 +22,12 @@ pub struct BucketStats {
     pub other_bucket: u8,
 }
 
-impl BucketStats {
-    pub fn new(moves: u8, goal_bucket: Bucket, other_bucket: u8) -> Self {
-        Self {
-            moves,
-            goal_bucket,
-            other_bucket,
-        }
-    }
+#[derive(Debug, Default, Copy, Clone)]
+struct State {
+    moves: u8,
+    bucket_1: u8,
+    bucket_2: u8,
 }
-
 /// Solve the bucket problem
 pub fn solve(
     capacity_1: u8,
@@ -35,32 +35,89 @@ pub fn solve(
     goal: u8,
     start_bucket: &Bucket,
 ) -> Option<BucketStats> {
-    let max = max(capacity_1, capacity_2);
-    let min = min(capacity_1, capacity_2);
-
-    if goal == capacity_1 {
-        let mut moves = 1;
-        let mut other_bucket = 0;
-        if *start_bucket == Bucket::Two {
-            moves = 2;
-            other_bucket = capacity_2;
-        }
-        return Some(BucketStats::new(moves, Bucket::One, other_bucket));
+    // State queue
+    let mut states = VecDeque::new();
+    // A set of bucket states used to prevent duplication in the state queue
+    let mut processed_states = HashSet::new();
+    // Create initial state
+    let mut state = State {
+        moves: 1,
+        ..Default::default()
+    };
+    if *start_bucket == Bucket::One {
+        state.bucket_1 = capacity_1;
+    } else {
+        state.bucket_2 = capacity_2;
     }
 
-    if goal == capacity_2 {
-        let mut moves = 1;
-        let mut other_bucket = 0;
-        if *start_bucket == Bucket::One {
-            moves = 2;
-            other_bucket = capacity_1;
-        }
-        return Some(BucketStats::new(moves, Bucket::Two, other_bucket));
-    }
+    states.push_back(state);
+    processed_states.insert((state.bucket_1, state.bucket_2));
 
-    if goal < min && goal == min - (max % min) {
-        let moves = 2 * ((max + min) / min);
-        return Some(BucketStats::new(moves, (*start_bucket).clone(), max));
+    while let Some(mut state) = states.pop_front() {
+        if state.bucket_2 == goal {
+            return Some(BucketStats {
+                moves: state.moves,
+                goal_bucket: Bucket::Two,
+                other_bucket: state.bucket_1,
+            });
+        }
+        if state.bucket_1 == goal {
+            return Some(BucketStats {
+                moves: state.moves,
+                goal_bucket: Bucket::One,
+                other_bucket: state.bucket_2,
+            });
+        }
+
+        state.moves += 1;
+        let mut next_states = VecDeque::new();
+        // Empty first bucket
+        if state.bucket_1 != 0 {
+            let mut new_state = state;
+            new_state.bucket_1 = 0;
+            next_states.push_back(new_state);
+        }
+        // Fill first bucket
+        if state.bucket_1 != capacity_1 {
+            let mut new_state = state;
+            new_state.bucket_1 = capacity_1;
+            next_states.push_back(new_state);
+        }
+        // Empty second bucket
+        if state.bucket_2 != 0 {
+            let mut new_state = state;
+            new_state.bucket_2 = 0;
+            next_states.push_back(new_state);
+        }
+        // Fill second bucket
+        if state.bucket_2 != capacity_2 {
+            let mut new_state = state;
+            new_state.bucket_2 = capacity_2;
+            next_states.push_back(new_state);
+        }
+        // Pour from bucket_1 to bucket_2
+        if state.bucket_1 != 0 && state.bucket_2 != capacity_2 {
+            let mut new_state = state;
+            let diff = min(state.bucket_1, capacity_2 - state.bucket_2);
+            new_state.bucket_1 -= diff;
+            new_state.bucket_2 += diff;
+            next_states.push_back(new_state);
+        }
+        // Pour from bucket_1 to bucket_2
+        if state.bucket_2 != 0 && state.bucket_1 != capacity_1 {
+            let mut new_state = state;
+            let diff = min(state.bucket_2, capacity_1 - state.bucket_1);
+            new_state.bucket_1 += diff;
+            new_state.bucket_2 -= diff;
+            next_states.push_back(new_state);
+        }
+        // Add new states to the queue
+        for next_state in next_states {
+            if !processed_states.contains(&(next_state.bucket_1, next_state.bucket_2)) {
+                states.push_back(next_state);
+                processed_states.insert((next_state.bucket_1, next_state.bucket_2));
+            }
+        }
     }
     None
 }
