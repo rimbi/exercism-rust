@@ -1,0 +1,41 @@
+{
+  "blurb": "Make a chain of dominoes.",
+  "authors": [
+    "EduardoBautista"
+  ],
+  "contributors": [
+    "andrewclarkson",
+    "AndrewKvalheim",
+    "ashleygwilliams",
+    "ClashTheBunny",
+    "cmccandless",
+    "coriolinus",
+    "cwhakes",
+    "EduardoBautista",
+    "efx",
+    "ErikSchierboom",
+    "etrepum",
+    "IanWhitney",
+    "kytrinyx",
+    "lutostag",
+    "mkantor",
+    "nfiles",
+    "petertseng",
+    "rofrol",
+    "stringparser",
+    "xakon",
+    "ZapAnton"
+  ],
+  "files": {
+    "solution": [
+      "src/lib.rs",
+      "Cargo.toml"
+    ],
+    "test": [
+      "tests/dominoes.rs"
+    ],
+    "example": [
+      ".meta/example.rs"
+    ]
+  }
+}
